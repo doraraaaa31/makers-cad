@@ -1,0 +1,16 @@
+.app { display: flex; height: 100vh; }
+.panel { width: 340px; padding: 16px; overflow-y: auto; border-right: 1px solid #ddd; background: #fafafa; box-sizing: border-box; }
+.panel h1 { margin: 0; font-size: 20px; }
+.sub { color: #666; margin: 4px 0 16px; font-size: 13px; }
+.row { display: grid; grid-template-columns: 1fr 64px 18px; gap: 4px 6px; align-items: center; margin-bottom: 12px; }
+.row label { grid-column: 1 / 4; font-size: 13px; }
+.row input[type=range] { grid-column: 1; width: 100%; }
+.row input[type=number] { width: 64px; }
+.unit { font-size: 12px; color: #666; }
+.actions { display: flex; gap: 8px; margin-top: 16px; }
+.actions button { flex: 1; padding: 10px; cursor: pointer; }
+.file { font-size: 12px; color: #666; word-break: break-all; }
+.err { color: #c00; font-size: 13px; }
+.view { flex: 1; position: relative; background: #f2f3f7; }
+.badge { position: absolute; top: 12px; right: 12px; background: #000a; color: #fff; padding: 4px 10px; border-radius: 6px; font-size: 12px; }
+.gensel { width: 100%; padding: 6px; margin: 8px 0 0; font-size: 14px; }
