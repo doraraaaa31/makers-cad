@@ -48,7 +48,7 @@ export function buildPot(p: Params): Shape3D {
   return pot
 }
 
-export const potGenerator: Generator = {
+export const generator: Generator = {
   id: 'pot',
   name: '植木鉢',
   params: [

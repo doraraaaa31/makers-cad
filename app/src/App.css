@@ -14,3 +14,53 @@
 .view { flex: 1; position: relative; background: #f2f3f7; }
 .badge { position: absolute; top: 12px; right: 12px; background: #000a; color: #fff; padding: 4px 10px; border-radius: 6px; font-size: 12px; }
 .gensel { width: 100%; padding: 6px; margin: 8px 0 0; font-size: 14px; }
+
+.colorrow { margin-top: 8px; }
+.colorrow label { font-size: 13px; }
+.swatches { display: flex; gap: 6px; align-items: center; margin-top: 6px; flex-wrap: wrap; }
+.sw { width: 24px; height: 24px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1px #aaa; cursor: pointer; padding: 0; }
+.sw.on { box-shadow: 0 0 0 2px #222; }
+.swatches input[type=color] { width: 32px; height: 28px; padding: 0; border: none; background: none; cursor: pointer; }
+.note { font-size: 11px; color: #888; margin: 6px 0 0; }
+
+.custombar { display: flex; gap: 6px; margin: 8px 0 0; }
+.custombar button { padding: 5px 8px; font-size: 12px; cursor: pointer; }
+.custombar button:first-child { flex: 1; }
+.editor { margin-top: 10px; padding: 10px; border: 1px solid #ddd; border-radius: 8px; background: #fff; }
+.elabel { display: block; font-size: 12px; color: #666; margin: 8px 0 4px; }
+.elabel:first-child { margin-top: 0; }
+.ename { width: 100%; box-sizing: border-box; padding: 5px; }
+.epart { display: flex; gap: 4px; align-items: center; margin-bottom: 4px; }
+.epart select { flex: 1; padding: 4px; min-width: 0; }
+.enum { width: 22px; height: 22px; padding: 0; font-size: 12px; color: #555; border: 1px solid #ccc; border-radius: 50%; background: #fff; cursor: pointer; }
+.del { cursor: pointer; padding: 2px 7px; }
+.eadd { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; margin-top: 6px; font-size: 12px; }
+.eadd button { padding: 3px 7px; cursor: pointer; font-size: 12px; }
+.eactions { display: flex; gap: 6px; margin-top: 10px; }
+.eactions button { flex: 1; padding: 7px; cursor: pointer; }
+.eactions .primary { background: #e8734a; color: #fff; border: none; border-radius: 4px; }
+.grp { grid-column: 1 / 4; margin: 10px 0 0; font-size: 13px; padding-top: 8px; border-top: 1px solid #e3e3e3; color: #333; }
+.epart.sel { background: #eef4ff; border-radius: 6px; outline: 1px solid #9bbcf0; }
+.epart.sel .enum { background: #2f7de1; color: #fff; border-color: #2f7de1; }
+.emode { display: flex; gap: 4px; }
+.emode button { flex: 1; padding: 5px; cursor: pointer; font-size: 12px; }
+.emode button.on { background: #2f7de1; color: #fff; border: 1px solid #2f7de1; border-radius: 4px; }
+.notice { background: #e8f6ec; color: #1e6b3a; border: 1px solid #b7e0c4; border-radius: 6px; padding: 6px 8px; font-size: 12px; margin: 8px 0 0; }
+.snap { margin-top: 10px; }
+.snapguide { margin-top: 6px; font-size: 12px; background: #fff7e6; border: 1px solid #f3d9a4; border-radius: 6px; padding: 8px; }
+.snapguide p { margin: 0 0 6px; }
+.snaprow { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 6px; }
+.snaprow input[type=number] { width: 64px; }
+.snapform .primary { width: 100%; padding: 6px; background: #e8734a; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
+.snapcancel { margin-top: 4px; padding: 4px 10px; cursor: pointer; font-size: 12px; }
+
+.pcolor { width: 26px; height: 24px; padding: 0; border: 1px solid #ccc; border-radius: 4px; background: none; cursor: pointer; flex: none; }
+.pcolorreset { padding: 1px 5px; cursor: pointer; flex: none; }
+.etext { width: 100%; box-sizing: border-box; padding: 4px 6px; margin: 0 0 6px 22px; width: calc(100% - 22px); }
+.eimage { display: flex; gap: 8px; align-items: center; margin: 0 0 6px 22px; font-size: 12px; }
+.ethumb { width: 36px; height: 36px; object-fit: contain; image-rendering: pixelated; border: 1px solid #ccc; background: #fff; flex: none; }
+.eimgname { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #555; }
+.eimgchange { padding: 3px 8px; border: 1px solid #bbb; border-radius: 4px; cursor: pointer; background: #fff; flex: none; }
+
+.epat { padding: 1px 5px; cursor: pointer; flex: none; border: 1px solid #bbb; border-radius: 4px; background: #fff; font-size: 13px; line-height: 1.2; }
+.epat.on { background: #2f7de1; color: #fff; border-color: #2f7de1; }

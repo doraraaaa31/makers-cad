@@ -53,7 +53,7 @@ export function buildBox(p: Params): Shape3D {
   return body
 }
 
-export const boxGenerator: Generator = {
+export const generator: Generator = {
   id: 'box',
   name: '収納ボックス',
   params: [

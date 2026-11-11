@@ -8,6 +8,7 @@ export interface ParamDef {
   step: number
   default: number
   unit: string // 'mm' | '個' | ''
+  group?: string // UIで見出しとして表示するグループ名（任意）
 }
 
 export type Params = Record<string, number>

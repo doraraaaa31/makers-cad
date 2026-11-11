@@ -1,4 +1,5 @@
 import type { Params } from '../generators/types'
+import type { CustomShape } from '../custom/custom'
 import type { ReplicadMesh } from 'replicad-threejs-helper'
 
 const worker = new Worker(new URL('./worker.ts', import.meta.url), { type: 'module' })
@@ -13,13 +14,14 @@ worker.onmessage = (e) => {
   m.ok ? p.resolve(m) : p.reject(new Error(m.error))
 }
 
-function call(kind: 'mesh' | 'stl' | 'step', id: string, params: Params): Promise<any> {
+function call(kind: 'mesh' | 'stl' | 'step', id: string, params: Params, custom?: CustomShape): Promise<any> {
   const reqId = ++seq
   return new Promise((resolve, reject) => {
     pending.set(reqId, { resolve, reject })
-    worker.postMessage({ reqId, kind, id, params })
+    worker.postMessage({ reqId, kind, id, params, custom })
   })
 }
 
-export const buildMesh = async (id: string, p: Params): Promise<ReplicadMesh> => (await call('mesh', id, p)).mesh
-export const buildBlob = async (kind: 'stl' | 'step', id: string, p: Params): Promise<Blob> => (await call(kind, id, p)).blob
+export interface PreviewMesh { id: string; mesh: ReplicadMesh }
+export const buildMesh = async (id: string, p: Params, custom?: CustomShape): Promise<PreviewMesh[]> => (await call('mesh', id, p, custom)).meshes
+export const buildBlob = async (kind: 'stl' | 'step', id: string, p: Params, custom?: CustomShape): Promise<Blob> => (await call(kind, id, p, custom)).blob
