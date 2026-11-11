@@ -3,6 +3,7 @@ import { generators as builtins } from './generators'
 import type { Generator, Params } from './generators/types'
 import { CustomEditor } from './custom/CustomEditor'
 import { SnapPanel, type SnapState } from './custom/SnapPanel'
+import { useEditHistory } from './custom/history'
 import {
   anchorPos, canRotate, customParams, edgeAxis, loadCustoms, makeCustomGenerator, newPart, offsetAxes, paramKey, partBox,
   placeOnFace, saveCustoms, snapDelta, transformPart, uid, WORLD_BOX, WORLD_ID,
@@ -53,6 +54,34 @@ export default function App() {
   const latest = useRef(0)
   const [color, setColor] = useState(() => localStorage.getItem(COLOR_KEY) ?? SWATCHES[0])
   useEffect(() => localStorage.setItem(COLOR_KEY, color), [color])
+
+  // 編集中の「元に戻す／やり直す」（形状の構造・パーツの値・スライダーの値をまとめて戻す）
+  const history = useEditHistory(draft ? { draft, params } : null, (s) => {
+    setSnapState(null)
+    setDraft(s.draft)
+    setParams(s.params)
+    setSelectedId((id) => (s.draft.parts.some((p) => p.id === id) ? id : (s.draft.parts[0]?.id ?? null)))
+  })
+  // キー操作：Ctrl+Z（元に戻す）、Ctrl+Y または Ctrl+Shift+Z（やり直す）。Mac は Cmd。
+  // 文字を入力する欄（名前・文字パーツ）では、ブラウザ標準の取り消しを使う
+  const historyRef = useRef(history)
+  historyRef.current = history
+  const editing = !!draft
+  useEffect(() => {
+    if (!editing) return
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey) || e.altKey) return
+      const el = e.target as HTMLElement | null
+      const textual = !!el && (el.tagName === 'TEXTAREA' || el.isContentEditable
+        || (el.tagName === 'INPUT' && ['text', 'search', 'url', 'email', 'password', 'tel', ''].includes((el as HTMLInputElement).type)))
+      if (textual) return
+      const k = e.key.toLowerCase()
+      if (k === 'z' && !e.shiftKey) { e.preventDefault(); historyRef.current.undo() }
+      else if (k === 'y' || (k === 'z' && e.shiftKey)) { e.preventDefault(); historyRef.current.redo() }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [editing])
 
   // 組み込み部品 + 自作形状（編集中はドラフトを優先）
   const customDefs = draft && !customs.some((c) => c.id === draft.id)
@@ -252,6 +281,7 @@ export default function App() {
         {draft && (
           <CustomEditor draft={draft} onChange={changeDraft} onSave={saveDraft} onCancel={cancelDraft}
             selectedId={selectedId} onSelect={(id) => { if (!snapState) setSelectedId(id) }} mode={gizmoMode} onMode={setGizmoMode} defaultColor={color}
+            canUndo={history.canUndo} canRedo={history.canRedo} onUndo={history.undo} onRedo={history.redo}
             onSetParams={(patch) => setParams((prev) => ({ ...prev, ...patch }))} />
         )}
         {draft && (

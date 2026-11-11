@@ -26,7 +26,7 @@ function ImageThumb({ img }: { img: ReliefImage }) {
 }
 
 /** 自作形状の構造（パーツの種類・足す/くり抜く・追加/削除）を編集する。寸法は下のスライダーで調整。 */
-export function CustomEditor({ draft, onChange, onSave, onCancel, selectedId, onSelect, mode, onMode, defaultColor, onSetParams }: {
+export function CustomEditor({ draft, onChange, onSave, onCancel, selectedId, onSelect, mode, onMode, defaultColor, onSetParams, canUndo, canRedo, onUndo, onRedo }: {
   draft: CustomShape
   onChange: (d: CustomShape) => void
   onSave: () => void
@@ -37,6 +37,10 @@ export function CustomEditor({ draft, onChange, onSave, onCancel, selectedId, on
   onMode: (m: 'translate' | 'scale') => void
   defaultColor: string // 共通のプレビュー色（パーツの色が未指定のときに使う）
   onSetParams: (patch: Record<string, number>) => void // スライダーの値（パラメータ）を直接設定する
+  canUndo: boolean
+  canRedo: boolean
+  onUndo: () => void
+  onRedo: () => void
 }) {
   const setPart = (i: number, patch: Partial<CustomShape['parts'][number]>) =>
     onChange({ ...draft, parts: draft.parts.map((p, j) => (j === i ? { ...p, ...patch } : p)) })
@@ -62,6 +66,10 @@ export function CustomEditor({ draft, onChange, onSave, onCancel, selectedId, on
 
   return (
     <div className="editor">
+      <div className="ehist">
+        <button onClick={onUndo} disabled={!canUndo} title="元に戻す（Ctrl+Z）">↶ 元に戻す</button>
+        <button onClick={onRedo} disabled={!canRedo} title="やり直す（Ctrl+Y）">↷ やり直す</button>
+      </div>
       <label className="elabel">形状の名前</label>
       <input className="ename" value={draft.name} onChange={(e) => onChange({ ...draft, name: e.target.value })} />
 

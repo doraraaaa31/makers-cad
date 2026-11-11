@@ -67,3 +67,6 @@
 
 .eorient { display: flex; gap: 4px; align-items: center; margin: 0 0 6px 22px; font-size: 12px; }
 .eorient button { padding: 2px 8px; cursor: pointer; font-size: 12px; }
+
+.ehist { display: flex; gap: 6px; margin-bottom: 8px; }
+.ehist button { flex: 1; padding: 4px 6px; cursor: pointer; font-size: 12px; }
