@@ -4,8 +4,8 @@ import type { Generator, Params } from './generators/types'
 import { CustomEditor } from './custom/CustomEditor'
 import { SnapPanel, type SnapState } from './custom/SnapPanel'
 import {
-  anchorPos, customParams, edgeAxis, loadCustoms, makeCustomGenerator, newPart, offsetAxes, paramKey, partBox,
-  saveCustoms, snapDelta, transformPart, uid, WORLD_BOX, WORLD_ID,
+  anchorPos, canRotate, customParams, edgeAxis, loadCustoms, makeCustomGenerator, newPart, offsetAxes, paramKey, partBox,
+  placeOnFace, saveCustoms, snapDelta, transformPart, uid, WORLD_BOX, WORLD_ID,
   type CustomShape, type SnapMode, type Vec3,
 } from './custom/custom'
 import { buildBlob, buildMesh, type PreviewMesh } from './kernel/client'
@@ -121,6 +121,14 @@ export default function App() {
   }
   const pickSnap = (partId: string, s: Vec3) => {
     if (!snapState) return
+    if (snapState.mode === 'face') {
+      // 面に貼る：動かす側の基準は選ばず、貼り付け先の面を選ぶだけ
+      if (partId !== selectedId && movingPart) {
+        setParams((prev) => ({ ...prev, ...placeOnFace(movingPart, prev, boxOf(partId), s) }))
+        setSnapState(null)
+      }
+      return
+    }
     if (snapState.picks.length === 0) {
       if (partId === selectedId) setSnapState({ ...snapState, picks: [{ partId, s }] }) // ① 動かす側の基準
       return
@@ -148,7 +156,8 @@ export default function App() {
           ? {
               mode: snapState.mode,
               targetIds:
-                snapState.picks.length === 0 ? [selectedId]
+                snapState.mode === 'face' ? draft.parts.filter((p) => p.id !== selectedId).map((p) => p.id)
+                : snapState.picks.length === 0 ? [selectedId]
                 : snapState.picks.length === 1 ? [selectedId, ...draft.parts.filter((p) => p.id !== selectedId).map((p) => p.id), WORLD_ID]
                 : [],
               hideUnpicked: snapState.picks.length > 0 ? [selectedId] : [],
@@ -242,10 +251,11 @@ export default function App() {
         </div>
         {draft && (
           <CustomEditor draft={draft} onChange={changeDraft} onSave={saveDraft} onCancel={cancelDraft}
-            selectedId={selectedId} onSelect={(id) => { if (!snapState) setSelectedId(id) }} mode={gizmoMode} onMode={setGizmoMode} defaultColor={color} />
+            selectedId={selectedId} onSelect={(id) => { if (!snapState) setSelectedId(id) }} mode={gizmoMode} onMode={setGizmoMode} defaultColor={color}
+            onSetParams={(patch) => setParams((prev) => ({ ...prev, ...patch }))} />
         )}
         {draft && (
-          <SnapPanel state={snapState} canStart={!!movingPart} axes={snapState ? offsetAxes(
+          <SnapPanel state={snapState} canStart={!!movingPart} canFace={!!movingPart && canRotate(movingPart)} axes={snapState ? offsetAxes(
             snapState.picks[0] ? edgeAxis(snapState.picks[0].s) : -1, snapState.picks[1] ? edgeAxis(snapState.picks[1].s) : -1) : []}
             onStart={startSnap} onCancel={() => setSnapState(null)}
             onChange={(patch) => setSnapState((st) => (st ? { ...st, ...patch } : st))}

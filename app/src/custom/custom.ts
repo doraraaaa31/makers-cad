@@ -44,6 +44,12 @@ const POS: Field[] = [
   { key: 'y', label: '位置 Y（中心）', min: -200, max: 200, step: 1, default: 0 },
   { key: 'z', label: '位置 Z（底面）', min: -100, max: 300, step: 1, default: 0 },
 ]
+/** 向き（度）。X → Y → Z の順に、パーツの中心まわりに回す。文字や画像を側面・斜めの面に置くために使う */
+const ROT: Field[] = [
+  { key: 'rotX', label: '向き：X軸まわり', min: -180, max: 180, step: 5, default: 0, unit: '°' },
+  { key: 'rotY', label: '向き：Y軸まわり', min: -180, max: 180, step: 5, default: 0, unit: '°' },
+  { key: 'rotZ', label: '向き：Z軸まわり', min: -180, max: 180, step: 5, default: 0, unit: '°' },
+]
 const size = (key: string, label: string, def: number, min = 0.5): Field => ({ key, label, min, max: 300, step: 0.5, default: def })
 
 export const FIELDS: Record<PartType, Field[]> = {
@@ -60,9 +66,9 @@ export const FIELDS: Record<PartType, Field[]> = {
     { key: 'base', label: '土台の厚み', min: 0.4, max: 10, step: 0.2, default: 1 },
     { key: 'levels', label: '明るさの段数', min: 2, max: 8, step: 1, default: 4, unit: '段' },
     { key: 'invert', label: '明暗を反転（0=しない 1=する）', min: 0, max: 1, step: 1, default: 0, unit: '' },
-    ...POS,
+    ...POS, ...ROT,
   ],
-  text: [size('size', '文字の大きさ', 10, 2), { key: 'h', label: '厚み／深さ', min: 0.2, max: 50, step: 0.1, default: 1 }, ...POS],
+  text: [size('size', '文字の大きさ', 10, 2), { key: 'h', label: '厚み／深さ', min: 0.2, max: 50, step: 0.1, default: 1 }, ...POS, ...ROT],
 }
 
 /** 模様（格子状の繰り返し）：最初の1個を基準に、+X / +Y 方向へ並べる。間隔は中心から中心まで */
@@ -129,9 +135,20 @@ function buildOne(part: Part, p: Params): Shape3D {
   }
 }
 
+/** 向き（rotX → rotY → rotZ）が指定されていれば、パーツの中心まわりに回す */
+function rotateAboutCenter(part: Part, p: Params, shape: Shape3D): Shape3D {
+  const rot = ['rotX', 'rotY', 'rotZ'].map((k) => p[paramKey(part, k)] ?? part.values[k] ?? 0)
+  if (!rot.some((a) => a !== 0)) return shape
+  const c = baseBox(part, p).center
+  const axes: [number, number, number][] = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
+  let out = shape
+  rot.forEach((a, i) => { if (a !== 0) out = out.rotate(a, c, axes[i]) as Shape3D })
+  return out
+}
+
 /** パーツ1つ分の立体。模様が有効なら、最初の1個を +X / +Y 方向に繰り返し並べて結合する */
 function buildPart(part: Part, p: Params): Shape3D {
-  const one = buildOne(part, p)
+  const one = rotateAboutCenter(part, p, buildOne(part, p))
   if (!part.pattern) return one
   const v = (k: string) => p[paramKey(part, k)] ?? part.values[k] ?? PATTERN_FIELDS.find((f) => f.key === k)!.default
   const nx = Math.round(v('repX'))
@@ -224,8 +241,8 @@ export const estimateTextWidth = (text: string, size: number) =>
 
 const val = (part: Part, p: Params, k: string) => p[paramKey(part, k)] ?? part.values[k]
 
-/** パーツの現在の寸法から、それを囲む枠の中心とサイズを求める（Z が上） */
-export function partBox(part: Part, p: Params): PartBox {
+/** 回転前の枠（パーツ自身の向きでの、中心とサイズ）。回転の中心でもある */
+function baseBox(part: Part, p: Params): PartBox {
   const v = (k: string) => val(part, p, k)
   const [x, y, z] = [v('x'), v('y'), v('z')]
   switch (part.type) {
@@ -250,6 +267,31 @@ export function partBox(part: Part, p: Params): PartBox {
   }
 }
 
+/** ベクトル v を、X → Y → Z の順に、度で回す */
+function rotateVec(v: Vec3, rot: Vec3): Vec3 {
+  let [x, y, z] = v
+  const r = (d: number) => [Math.cos((d * Math.PI) / 180), Math.sin((d * Math.PI) / 180)]
+  let [c, s] = r(rot[0]); [y, z] = [y * c - z * s, y * s + z * c]
+  ;[c, s] = r(rot[1]); [x, z] = [x * c + z * s, -x * s + z * c]
+  ;[c, s] = r(rot[2]); [x, y] = [x * c - y * s, x * s + y * c]
+  return [x, y, z]
+}
+
+const rotOf = (part: Part, p: Params): Vec3 => ['rotX', 'rotY', 'rotZ'].map((k) => val(part, p, k) ?? 0) as Vec3
+
+/** パーツを囲む枠の中心とサイズ（Z が上）。向きを変えているときは、回した後の形を囲む軸に平行な枠 */
+export function partBox(part: Part, p: Params): PartBox {
+  const b = baseBox(part, p)
+  const rot = rotOf(part, p)
+  if (!rot.some((a) => a !== 0)) return b
+  const mn = [Infinity, Infinity, Infinity], mx = [-Infinity, -Infinity, -Infinity]
+  for (const sx of [-1, 1]) for (const sy of [-1, 1]) for (const sz of [-1, 1]) {
+    const q = rotateVec([(sx * b.size[0]) / 2, (sy * b.size[1]) / 2, (sz * b.size[2]) / 2], rot)
+    for (let i = 0; i < 3; i++) { mn[i] = Math.min(mn[i], q[i]); mx[i] = Math.max(mx[i], q[i]) }
+  }
+  return { center: b.center, size: [mx[0] - mn[0], mx[1] - mn[1], mx[2] - mn[2]] }
+}
+
 const snap = (n: number, step: number) => Math.round(n / step) * step
 const clampField = (type: PartType, key: string, n: number) => {
   const f = FIELDS[type].find((f) => f.key === key)!
@@ -262,6 +304,8 @@ const clampField = (type: PartType, key: string, n: number) => {
  */
 export function transformPart(part: Part, p: Params, center: [number, number, number], scale: [number, number, number]): Params {
   const v = (k: string) => val(part, p, k)
+  // 向きを変えているパーツは、世界座標の軸での拡大縮小が意味を持たないので、移動だけを反映する
+  if (rotOf(part, p).some((a) => a !== 0)) scale = [1, 1, 1]
   const [sx, sy, sz] = scale
   const far = (...xs: number[]) => xs.reduce((a, b) => (Math.abs(b - 1) > Math.abs(a - 1) ? b : a), 1)
   // 倍率が1（=寸法を変えていない）なら、現在の値をそのまま保つ（移動だけで寸法が丸められないように）
@@ -292,7 +336,7 @@ export function transformPart(part: Part, p: Params, center: [number, number, nu
   }
   // 新しい寸法で枠を求め直し、中心を保ったまま底面の Z を決める
   const tmp: Part = { ...part, values: { ...part.values, ...next } }
-  const size = partBox({ ...tmp, values: { ...tmp.values, x: 0, y: 0, z: 0 } }, {}).size
+  const size = baseBox({ ...tmp, values: { ...tmp.values, x: 0, y: 0, z: 0 } }, {}).size
   const r2 = (n: number) => Math.round(n * 100) / 100
   const out: Params = { x: r2(center[0]), y: r2(center[1]), z: r2(center[2] - size[2] / 2) }
   out.x = clampField(part.type, 'x', out.x)
@@ -306,7 +350,7 @@ export function transformPart(part: Part, p: Params, center: [number, number, nu
 // 各パーツの枠（バウンディングボックス）上の「点」と「辺」を基準に、パーツを平行移動する。
 
 export type Vec3 = [number, number, number]
-export type SnapMode = 'point' | 'edge' | 'offset'
+export type SnapMode = 'point' | 'edge' | 'offset' | 'face'
 export const AXIS_NAME = ['X', 'Y', 'Z']
 
 /** 合わせ先に使える「原点と座標軸」。大きさ0の枠として扱う */
@@ -347,4 +391,47 @@ export function snapDelta(mode: SnapMode, pa: Vec3, aAxis: number, pb: Vec3, bAx
     d[axis] = pb[axis] + dist - pa[axis]
   }
   return d
+}
+
+
+// ---- 文字・画像の向き（上・前・後・左・右・下）と、面への貼り付け ----
+
+/** 向きのプリセット：面の外向きの法線 → [rotX, rotY, rotZ]（文字や画像の「表」が、その向きを向く） */
+export const ORIENTATIONS: { label: string; normal: Vec3; rot: Vec3 }[] = [
+  { label: '上', normal: [0, 0, 1], rot: [0, 0, 0] },
+  { label: '前', normal: [0, -1, 0], rot: [90, 0, 0] },
+  { label: '後', normal: [0, 1, 0], rot: [90, 0, 180] },
+  { label: '左', normal: [-1, 0, 0], rot: [90, 0, -90] },
+  { label: '右', normal: [1, 0, 0], rot: [90, 0, 90] },
+  { label: '下', normal: [0, 0, -1], rot: [180, 0, 0] },
+]
+
+/** 向きが回転をもつパーツ（文字・画像）か */
+export const canRotate = (part: Part) => FIELDS[part.type].some((f) => f.key === 'rotX')
+
+/** 向きを設定するためのパラメータ差分 */
+export function orientationPatch(part: Part, rot: Vec3): Params {
+  return { [paramKey(part, 'rotX')]: rot[0], [paramKey(part, 'rotY')]: rot[1], [paramKey(part, 'rotZ')]: rot[2] }
+}
+
+/**
+ * 文字・画像を、枠の面（面の中心 s = 法線方向の単位ベクトル）に貼り付けるパラメータ差分を返す。
+ * 「足す」なら面から外向きに盛り上がる（0.3mm だけ中にめり込ませて、確実に結合する）。
+ * 「くり抜く」なら面から内側へ、厚み（＝深さ）ぶん掘り込む。
+ * 枠は囲む直方体なので、円柱や球の側面など、曲がった面では表面と一致しない。
+ */
+export function placeOnFace(part: Part, p: Params, target: PartBox, s: Vec3): Params {
+  const o = ORIENTATIONS.find((q) => q.normal.every((v, i) => v === s[i]))
+  if (!o) return {}
+  const thick = baseBox(part, p).size[2]
+  const k = part.op === 'cut' ? -thick / 2 : thick / 2 - 0.3
+  const face = anchorPos(target, s)
+  const c: Vec3 = [face[0] + s[0] * k, face[1] + s[1] * k, face[2] + s[2] * k]
+  const r2 = (n: number) => Math.round(n * 100) / 100
+  return {
+    [paramKey(part, 'x')]: r2(c[0]),
+    [paramKey(part, 'y')]: r2(c[1]),
+    [paramKey(part, 'z')]: r2(c[2] - thick / 2),
+    ...orientationPatch(part, o.rot),
+  }
 }

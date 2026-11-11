@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useRef } from 'react'
-import { newPart, OP_LABEL, TYPE_LABEL, withPattern, type CustomShape, type PartOp, type PartType } from './custom'
+import { canRotate, newPart, OP_LABEL, ORIENTATIONS, orientationPatch, TYPE_LABEL, withPattern, type CustomShape, type PartOp, type PartType } from './custom'
 import { readReliefImage } from './imageFile'
 import type { ReliefImage } from './relief'
 
@@ -26,7 +26,7 @@ function ImageThumb({ img }: { img: ReliefImage }) {
 }
 
 /** 自作形状の構造（パーツの種類・足す/くり抜く・追加/削除）を編集する。寸法は下のスライダーで調整。 */
-export function CustomEditor({ draft, onChange, onSave, onCancel, selectedId, onSelect, mode, onMode, defaultColor }: {
+export function CustomEditor({ draft, onChange, onSave, onCancel, selectedId, onSelect, mode, onMode, defaultColor, onSetParams }: {
   draft: CustomShape
   onChange: (d: CustomShape) => void
   onSave: () => void
@@ -36,6 +36,7 @@ export function CustomEditor({ draft, onChange, onSave, onCancel, selectedId, on
   mode: 'translate' | 'scale'
   onMode: (m: 'translate' | 'scale') => void
   defaultColor: string // 共通のプレビュー色（パーツの色が未指定のときに使う）
+  onSetParams: (patch: Record<string, number>) => void // スライダーの値（パラメータ）を直接設定する
 }) {
   const setPart = (i: number, patch: Partial<CustomShape['parts'][number]>) =>
     onChange({ ...draft, parts: draft.parts.map((p, j) => (j === i ? { ...p, ...patch } : p)) })
@@ -94,6 +95,15 @@ export function CustomEditor({ draft, onChange, onSave, onCancel, selectedId, on
             <button className="del" disabled={draft.parts.length <= 1} aria-label="このパーツを削除"
               onClick={() => onChange({ ...draft, parts: draft.parts.filter((_, j) => j !== i) })}>✕</button>
           </div>
+          {canRotate(part) && (
+            <div className="eorient">
+              <span>向き：</span>
+              {ORIENTATIONS.map((o) => (
+                <button key={o.label} title={`${o.label}向きにする（面の外向きの法線: ${o.normal.join(', ')}）`}
+                  onClick={() => onSetParams(orientationPatch(part, o.rot))}>{o.label}</button>
+              ))}
+            </div>
+          )}
           {part.type === 'text' && (
             <input className="etext" value={part.text ?? ''} placeholder="表示する文字（日本語OK）" aria-label={`パーツ${i + 1}の文字`}
               onChange={(e) => setPart(i, { text: e.target.value })} />

@@ -58,6 +58,7 @@ function PartBoxView({ item, selected, overlay }: { item: OverlayItem; selected:
 
   const box = (
     <mesh ref={ref} position={item.center} userData={{ partId: item.id }}
+      {...(overlay.snap ? { raycast: () => null } : {})} // 位置合わせ中は、枠がクリックを受けて目印への操作を邪魔しないようにする
       onClick={(e) => {
         e.stopPropagation()
         if (overlay.snap) return // 位置合わせ中は、枠のクリックで選択を切り替えない
@@ -135,9 +136,11 @@ function SnapMarkers({ item, snap }: { item: OverlayItem; snap: SnapOverlay }) {
   const out: React.ReactNode[] = []
   const show = (s: Vec3) => !snap.hideUnpicked.includes(item.id) || isPicked(s)
 
-  if (snap.mode === 'point') {
+  if (snap.mode === 'point' || snap.mode === 'face') {
     for (const x of isWorld ? [0] : S3) for (const y of isWorld ? [0] : S3) for (const z of isWorld ? [0] : S3) {
       const s: Vec3 = [x, y, z]
+      // 面に貼る：面の中心（0 がちょうど2つ）だけを選べるようにする
+      if (snap.mode === 'face' && s.filter((v) => v === 0).length !== 2) continue
       if (show(s)) out.push(<Marker key={s.join()} position={anchorPos(box, s)} args={r} picked={isPicked(s)} onPick={() => snap.onPick(item.id, s)} />)
     }
   } else {

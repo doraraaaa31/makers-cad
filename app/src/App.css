@@ -64,3 +64,6 @@
 
 .epat { padding: 1px 5px; cursor: pointer; flex: none; border: 1px solid #bbb; border-radius: 4px; background: #fff; font-size: 13px; line-height: 1.2; }
 .epat.on { background: #2f7de1; color: #fff; border-color: #2f7de1; }
+
+.eorient { display: flex; gap: 4px; align-items: center; margin: 0 0 6px 22px; font-size: 12px; }
+.eorient button { padding: 2px 8px; cursor: pointer; font-size: 12px; }
